@@ -124,7 +124,10 @@ export const resolvers = {
       const first = Math.min(args.pagination?.first ?? 20, 50);
       const after = args.pagination?.after ? decodeCursor(args.pagination.after) : undefined;
 
-      const where: Record<string, unknown> = { verified: true };
+      const where: Record<string, unknown> = {};
+      if (f.verifiedOnly !== false) {
+        where.verified = true;
+      }
       if (f.bloodGroup) where.bloodGroup = f.bloodGroup;
       if (f.availableOnly) where.available = true;
       if (f.city) where.city = f.city;

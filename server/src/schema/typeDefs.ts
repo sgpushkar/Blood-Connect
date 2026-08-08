@@ -260,6 +260,7 @@ export const typeDefs = /* GraphQL */ `
     eligibleOnly: Boolean
     city: String
     maxAge: Int
+    verifiedOnly: Boolean
   }
 
   input RequestFilterInput {

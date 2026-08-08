@@ -74,7 +74,10 @@ export default function AdminDashboard() {
     try {
       const [sData, dData, hData, bData] = await Promise.all([
         gql<any>(NETWORK_STATS_QUERY),
-        gql<any>(DONORS_QUERY, { pagination: { first: 100 } }),
+        gql<{ donors: any }>(DONORS_QUERY, { 
+          filter: { verifiedOnly: false }, 
+          pagination: { first: 50 } 
+        }),
         gql<any>(HOSPITALS_QUERY),
         gql<any>(BLOOD_BANKS_QUERY)
       ]);
