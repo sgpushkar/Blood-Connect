@@ -438,6 +438,15 @@ export const RECORD_DONATION_MUTATION = `
   }
 `;
 
+export const COMPLETE_REQUEST_MUTATION = `
+  mutation CompleteBloodRequest($id: ID!) {
+    completeBloodRequest(id: $id) {
+      id
+      status
+    }
+  }
+`;
+
 export interface NetworkStatsData {
   networkStats: {
     totalDonors: number;

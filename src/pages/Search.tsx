@@ -227,7 +227,10 @@ export default function Search() {
                       <dd className="text-right text-ink">{formatDate(d.lastDonation)}</dd>
                     </dl>
 
-                    <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-xs font-semibold text-white transition-transform hover:scale-[1.02] active:scale-[0.98]">
+                    <button 
+                      onClick={() => alert(`Contact request sent to ${d.name}. They will be notified.`)}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-xs font-semibold text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
                       <Phone size={13} /> Request contact
                     </button>
                   </motion.div>

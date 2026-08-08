@@ -389,6 +389,45 @@ export const resolvers = {
         });
       }
 
+      if (role === "HOSPITAL") {
+        await ctx.prisma.hospital.create({
+          data: {
+            userId: user.id,
+            name,
+            city: city ?? "Mumbai",
+            address: city ?? "Mumbai",
+            lat: 19.076,
+            lng: 72.8777,
+            phone: phone ?? "",
+            verified: false,
+            activeRequests: 0,
+            bedsForTransfusion: 5
+          }
+        });
+      }
+
+      if (role === "BLOOD_BANK") {
+        await ctx.prisma.bloodBank.create({
+          data: {
+            userId: user.id,
+            name,
+            city: city ?? "Mumbai",
+            address: city ?? "Mumbai",
+            lat: 19.076,
+            lng: 72.8777,
+            phone: phone ?? "",
+            inventoryStats: "{}",
+            stock: {
+              create: [
+                { bloodGroup: "A_POS", units: 0 },
+                { bloodGroup: "O_POS", units: 0 },
+                { bloodGroup: "B_POS", units: 0 },
+              ]
+            }
+          }
+        });
+      }
+
       const token = signToken({ userId: user.id, role: user.role });
       return { token, user };
     },

@@ -10,7 +10,7 @@ import DashboardShell, { StatCard } from "../../components/DashboardShell";
 import { BloodGroupChip, Avatar } from "../../components/Chips";
 import StatusPill, { toneForRequestStatus, toneForUrgency } from "../../components/StatusPill";
 import { formatDate, distanceKm } from "../../lib/utils";
-import { gql, ME_HOSPITAL_QUERY, BLOOD_REQUESTS_QUERY, DONORS_QUERY, BROADCAST_EMERGENCY_MUTATION } from "../../lib/graphql";
+import { gql, ME_HOSPITAL_QUERY, BLOOD_REQUESTS_QUERY, DONORS_QUERY, BROADCAST_EMERGENCY_MUTATION, COMPLETE_REQUEST_MUTATION } from "../../lib/graphql";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -97,6 +97,17 @@ export default function HospitalDashboard() {
     }
   };
 
+  const handleCompleteRequest = async (id: string) => {
+    if (!confirm("Mark this request as fulfilled?")) return;
+    try {
+      await gql(COMPLETE_REQUEST_MUTATION, { id });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to mark request as fulfilled.");
+    }
+  };
+
   if (loading) {
     return <DashboardShell title="Loading..." roleLabel="Hospital" name="" tabs={TABS} activeTab={tab} onTabChange={setTab}><div className="p-8 text-center text-ink-soft">Loading data...</div></DashboardShell>;
   }
@@ -157,6 +168,7 @@ export default function HospitalDashboard() {
                 <th className="px-4 py-3">Urgency</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Needed by</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -168,10 +180,20 @@ export default function HospitalDashboard() {
                   <td className="px-4 py-3"><StatusPill tone={toneForUrgency(r.urgency)}>{r.urgency}</StatusPill></td>
                   <td className="px-4 py-3"><StatusPill tone={toneForRequestStatus(r.status)} dot>{r.status}</StatusPill></td>
                   <td className="px-4 py-3 text-ink-soft">{formatDate(r.requiredDate)}</td>
+                  <td className="px-4 py-3 text-right">
+                    {(r.status === "OPEN" || r.status === "MATCHED") && (
+                      <button 
+                        onClick={() => handleCompleteRequest(r.id)}
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        Mark fulfilled
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {hospitalRequests.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-ink-soft">No requests found.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-ink-soft">No requests found.</td></tr>
               )}
             </tbody>
           </table>
