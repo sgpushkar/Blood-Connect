@@ -592,6 +592,13 @@ export const resolvers = {
     ) => {
       requireRole(ctx, ["HOSPITAL", "BLOOD_BANK", "ADMIN"]);
 
+      const donorExists = await ctx.prisma.donor.findUnique({
+        where: { id: args.input.donorId }
+      });
+      if (!donorExists) {
+        throw new Error("Donor not found with the provided ID.");
+      }
+
       const certId = `CERT-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
       const donation = await ctx.prisma.donation.create({
         data: {

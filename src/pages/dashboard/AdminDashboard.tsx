@@ -117,6 +117,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const verifyDonor = async (id: string) => {
+    try {
+      await gql(VERIFY_DONOR_MUTATION, { donorId: id });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to verify donor.");
+    }
+  };
+
   const blockUser = async (id: string) => {
     if (!confirm("Are you sure you want to block this user?")) return;
     try {
@@ -214,7 +224,12 @@ export default function AdminDashboard() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={d.name} size="sm" />
-                      {d.name}
+                      <div>
+                        <div>{d.name}</div>
+                        <div className="text-[10px] text-ink-soft select-all font-mono" title="Donor ID (click to copy)">
+                          {d.id}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3"><BloodGroupChip group={d.bloodGroup} size="sm" /></td>
@@ -225,12 +240,22 @@ export default function AdminDashboard() {
                     </StatusPill>
                   </td>
                   <td className="px-4 py-3">
-                    <button 
-                      onClick={() => blockUser(d.id)}
-                      className="text-xs font-semibold text-status-red hover:underline"
-                    >
-                      Block
-                    </button>
+                    <div className="flex gap-3">
+                      {!d.verified && (
+                        <button 
+                          onClick={() => verifyDonor(d.id)}
+                          className="text-xs font-semibold text-primary hover:underline"
+                        >
+                          Verify
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => blockUser(d.id)}
+                        className="text-xs font-semibold text-status-red hover:underline"
+                      >
+                        Block
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

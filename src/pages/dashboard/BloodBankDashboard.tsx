@@ -181,7 +181,7 @@ export default function BloodBankDashboard() {
           <input 
             value={donorId}
             onChange={(e) => setDonorId(e.target.value)}
-            placeholder="Donor User ID" 
+            placeholder="Donor ID (e.g. from Admin Dashboard)" 
             className="w-full rounded-xl border border-line px-3 py-2.5 text-sm" 
           />
           <button 
