@@ -19,7 +19,9 @@ import {
   MY_DONATIONS_QUERY,
   BLOOD_REQUESTS_QUERY,
   TOGGLE_AVAILABILITY_MUTATION,
-  ACCEPT_REQUEST_MUTATION
+  ACCEPT_REQUEST_MUTATION,
+  REJECT_REQUEST_MUTATION,
+  UPDATE_DONOR_PROFILE_MUTATION
 } from "../../lib/graphql";
 
 const TABS = [
@@ -111,6 +113,29 @@ export default function DonorDashboard() {
       setNearby(prev => prev.filter(r => r.id !== requestId));
     } catch (err) {
       console.error("Failed to accept request:", err);
+    }
+  };
+
+  const handleDeclineRequest = async (requestId: string) => {
+    try {
+      await gql(REJECT_REQUEST_MUTATION, { requestId });
+      setNearby(prev => prev.filter(r => r.id !== requestId));
+    } catch (err) {
+      console.error("Failed to decline request:", err);
+    }
+  };
+
+  const handleEditProfile = async () => {
+    if (!donor) return;
+    const newCity = window.prompt("Update your city:", donor.city);
+    if (!newCity || newCity === donor.city) return;
+
+    try {
+      await gql(UPDATE_DONOR_PROFILE_MUTATION, { input: { city: newCity } });
+      await fetchData(); // refresh profile
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      alert("Failed to update profile.");
     }
   };
 
@@ -224,8 +249,11 @@ export default function DonorDashboard() {
               <span className="font-medium">{value}</span>
             </div>
           ))}
-          <button className="mt-2 w-full rounded-xl border border-line py-2.5 text-sm font-semibold hover:bg-card">
-            Edit profile
+          <button 
+            onClick={handleEditProfile}
+            className="mt-2 w-full rounded-xl border border-line py-2.5 text-sm font-semibold hover:bg-card"
+          >
+            Edit profile (City)
           </button>
         </div>
       )}
@@ -253,7 +281,10 @@ export default function DonorDashboard() {
                   >
                     Accept
                   </button>
-                  <button className="rounded-full border border-line px-4 py-1.5 font-semibold">
+                  <button 
+                    onClick={() => handleDeclineRequest(r.id)}
+                    className="rounded-full border border-line px-4 py-1.5 font-semibold"
+                  >
                     Decline
                   </button>
                 </div>

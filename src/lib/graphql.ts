@@ -397,6 +397,47 @@ export const VERIFY_HOSPITAL_MUTATION = `
   }
 `;
 
+export const BLOCK_USER_MUTATION = `
+  mutation BlockUser($userId: ID!) {
+    blockUser(userId: $userId) {
+      id
+      blocked
+    }
+  }
+`;
+
+export const BROADCAST_EMERGENCY_MUTATION = `
+  mutation BroadcastEmergency($message: String!, $bloodGroup: String!) {
+    broadcastEmergency(message: $message, bloodGroup: $bloodGroup)
+  }
+`;
+
+export const UPDATE_DONOR_PROFILE_MUTATION = `
+  mutation UpdateDonorProfile($input: UpdateDonorInput!) {
+    updateDonorProfile(input: $input) {
+      id
+    }
+  }
+`;
+
+export const REJECT_REQUEST_MUTATION = `
+  mutation RejectBloodRequest($requestId: ID!) {
+    rejectBloodRequest(requestId: $requestId) {
+      id
+    }
+  }
+`;
+
+export const RECORD_DONATION_MUTATION = `
+  mutation RecordDonation($input: RecordDonationInput!) {
+    recordDonation(input: $input) {
+      id
+      units
+      date
+    }
+  }
+`;
+
 export interface NetworkStatsData {
   networkStats: {
     totalDonors: number;

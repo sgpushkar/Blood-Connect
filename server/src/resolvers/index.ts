@@ -666,6 +666,41 @@ export const resolvers = {
         data: { blocked: true },
       });
     },
+
+    broadcastEmergency: async (_: unknown, args: { message: string, bloodGroup: string }, ctx: GqlContext) => {
+      requireRole(ctx, ["HOSPITAL"]);
+      
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.userId! },
+        include: { hospital: true },
+      });
+      if (!user?.hospital) throw new Error("Hospital profile not found.");
+
+      // Find compatible donors nearby
+      // In a real app we'd do geospatial queries. Here we just fetch matching blood group.
+      const compatibleDonors = await ctx.prisma.donor.findMany({
+        where: {
+          bloodGroup: args.bloodGroup as any,
+          available: true,
+          verified: true,
+          city: user.hospital.city
+        }
+      });
+
+      // Notify them
+      for (const donor of compatibleDonors) {
+        await ctx.prisma.notification.create({
+          data: {
+            userId: donor.userId,
+            title: "EMERGENCY BROADCAST",
+            body: `${user.hospital.name}: ${args.message}`,
+            type: "ALERT"
+          }
+        });
+      }
+
+      return true;
+    },
   },
 
   // ═════════════════════════════════════════════════════

@@ -374,6 +374,9 @@ export const typeDefs = /* GraphQL */ `
     verifyDonor(donorId: ID!): PublicDonor!
     verifyHospital(hospitalId: ID!): Hospital!
     blockUser(userId: ID!): User!
+
+    # Emergency
+    broadcastEmergency(message: String!, bloodGroup: BloodGroup!): Boolean!
   }
 
   # ─── Subscriptions ──────────────────────────────────

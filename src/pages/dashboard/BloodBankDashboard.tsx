@@ -3,7 +3,7 @@ import { LayoutGrid, Droplets, PackagePlus, FileBarChart } from "lucide-react";
 import DashboardShell, { StatCard } from "../../components/DashboardShell";
 import { BloodGroupChip } from "../../components/Chips";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { gql, ME_BLOOD_BANK_QUERY } from "../../lib/graphql";
+import { gql, ME_BLOOD_BANK_QUERY, RECORD_DONATION_MUTATION } from "../../lib/graphql";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -30,6 +30,10 @@ export default function BloodBankDashboard() {
   const [tab, setTab] = useState("overview");
   const [bank, setBank] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [donationGroup, setDonationGroup] = useState("A+");
+  const [donationUnits, setDonationUnits] = useState(1);
+  const [donorId, setDonorId] = useState("");
 
   const fetchData = useCallback(async () => {
     try {
@@ -47,6 +51,38 @@ export default function BloodBankDashboard() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleRecordDonation = async () => {
+    if (!donorId) return alert("Please enter a donor ID.");
+    if (!bank) return;
+    
+    // Convert back to backend enum
+    const unmapBg = (bg: string) => {
+      const m: Record<string, string> = {
+        "A+": "A_POS", "A-": "A_NEG", "B+": "B_POS", "B-": "B_NEG",
+        "AB+": "AB_POS", "AB-": "AB_NEG", "O+": "O_POS", "O-": "O_NEG"
+      };
+      return m[bg] || bg;
+    };
+    
+    try {
+      await gql(RECORD_DONATION_MUTATION, {
+        input: {
+          donorId: donorId,
+          hospitalId: bank.id, // using blood bank id as hospital id for this mutation as per schema
+          date: new Date().toISOString(),
+          units: donationUnits
+        }
+      });
+      alert("Donation logged successfully!");
+      setDonorId("");
+      setDonationUnits(1);
+      await fetchData(); // refresh stock
+    } catch (err) {
+      console.error(err);
+      alert("Failed to log donation: " + err.message);
+    }
+  };
 
   if (loading) {
     return <DashboardShell title="Loading..." roleLabel="Blood Bank" name="" tabs={TABS} activeTab={tab} onTabChange={setTab}><div className="p-8 text-center text-ink-soft">Loading data...</div></DashboardShell>;
@@ -124,15 +160,34 @@ export default function BloodBankDashboard() {
         <div className="max-w-lg space-y-4 rounded-2xl border border-line bg-white p-6">
           <p className="text-sm font-semibold">Log a new donation</p>
           <div className="grid grid-cols-2 gap-3">
-            <select className="rounded-xl border border-line px-3 py-2.5 text-sm">
+            <select 
+              value={donationGroup}
+              onChange={(e) => setDonationGroup(e.target.value)}
+              className="rounded-xl border border-line px-3 py-2.5 text-sm"
+            >
               {groups.map((g) => (
                 <option key={g}>{g}</option>
               ))}
             </select>
-            <input type="number" min={1} defaultValue={1} className="rounded-xl border border-line px-3 py-2.5 text-sm" placeholder="Units" />
+            <input 
+              type="number" 
+              min={1} 
+              value={donationUnits}
+              onChange={(e) => setDonationUnits(Number(e.target.value))}
+              className="rounded-xl border border-line px-3 py-2.5 text-sm" 
+              placeholder="Units" 
+            />
           </div>
-          <input placeholder="Donor name or ID" className="w-full rounded-xl border border-line px-3 py-2.5 text-sm" />
-          <button className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25">
+          <input 
+            value={donorId}
+            onChange={(e) => setDonorId(e.target.value)}
+            placeholder="Donor User ID" 
+            className="w-full rounded-xl border border-line px-3 py-2.5 text-sm" 
+          />
+          <button 
+            onClick={handleRecordDonation}
+            className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25"
+          >
             Add to inventory
           </button>
         </div>

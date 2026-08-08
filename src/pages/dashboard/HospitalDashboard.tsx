@@ -10,7 +10,7 @@ import DashboardShell, { StatCard } from "../../components/DashboardShell";
 import { BloodGroupChip, Avatar } from "../../components/Chips";
 import StatusPill, { toneForRequestStatus, toneForUrgency } from "../../components/StatusPill";
 import { formatDate, distanceKm } from "../../lib/utils";
-import { gql, ME_HOSPITAL_QUERY, BLOOD_REQUESTS_QUERY, DONORS_QUERY } from "../../lib/graphql";
+import { gql, ME_HOSPITAL_QUERY, BLOOD_REQUESTS_QUERY, DONORS_QUERY, BROADCAST_EMERGENCY_MUTATION } from "../../lib/graphql";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -35,6 +35,9 @@ export default function HospitalDashboard() {
   const [hospitalRequests, setHospitalRequests] = useState<any[]>([]);
   const [nearbyDonors, setNearbyDonors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [broadcastMsg, setBroadcastMsg] = useState("");
+  const [broadcastBg, setBroadcastBg] = useState("O_NEG");
 
   const fetchData = useCallback(async () => {
     try {
@@ -79,8 +82,19 @@ export default function HospitalDashboard() {
     fetchData();
   }, [fetchData]);
 
-  const handleBroadcast = () => {
-    alert("Broadcast feature will be integrated with backend notifications system in a future update.");
+  const handleBroadcast = async () => {
+    if (!broadcastMsg) return alert("Please enter a message.");
+    try {
+      await gql(BROADCAST_EMERGENCY_MUTATION, {
+        message: broadcastMsg,
+        bloodGroup: broadcastBg
+      });
+      alert("Emergency broadcast sent to nearby donors!");
+      setBroadcastMsg("");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to send broadcast.");
+    }
   };
 
   if (loading) {
@@ -203,11 +217,31 @@ export default function HospitalDashboard() {
             This notifies every verified, available donor within 10 km matching the selected blood
             group — use it only for genuine emergencies.
           </p>
-          <textarea
-            rows={3}
-            placeholder="e.g. Urgent need for O- blood, 3 units, trauma case"
-            className="w-full rounded-xl border border-line px-3 py-2.5 text-sm"
-          />
+          
+          <div className="space-y-3">
+            <select 
+              value={broadcastBg}
+              onChange={(e) => setBroadcastBg(e.target.value)}
+              className="w-full rounded-xl border border-line px-3 py-2.5 text-sm"
+            >
+              <option value="A_POS">A+</option>
+              <option value="A_NEG">A-</option>
+              <option value="B_POS">B+</option>
+              <option value="B_NEG">B-</option>
+              <option value="AB_POS">AB+</option>
+              <option value="AB_NEG">AB-</option>
+              <option value="O_POS">O+</option>
+              <option value="O_NEG">O-</option>
+            </select>
+            <textarea
+              rows={3}
+              value={broadcastMsg}
+              onChange={(e) => setBroadcastMsg(e.target.value)}
+              placeholder="e.g. Urgent need for O- blood, 3 units, trauma case"
+              className="w-full rounded-xl border border-line px-3 py-2.5 text-sm"
+            />
+          </div>
+          
           <button 
             onClick={handleBroadcast}
             className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25"
