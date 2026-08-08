@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Droplet, ChevronDown } from "lucide-react";
+import { Menu, X, Droplet, LogOut } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { Avatar } from "./Chips";
 import type { UserRole } from "../types";
 import { cn } from "../lib/utils";
 
@@ -24,8 +25,7 @@ const ROLE_ROUTE: Record<UserRole, string> = {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [roleMenu, setRoleMenu] = useState(false);
-  const { role, setRole } = useApp();
+  const { user, logout } = useApp();
   const navigate = useNavigate();
 
   const navLinks = [
@@ -34,11 +34,10 @@ export default function Navbar() {
     { to: "/how-it-works", label: "How It Works" },
   ];
 
-  function switchRole(r: UserRole) {
-    setRole(r);
-    setRoleMenu(false);
+  function handleLogout() {
+    logout();
     setOpen(false);
-    navigate(ROLE_ROUTE[r]);
+    navigate("/");
   }
 
   return (
@@ -71,45 +70,36 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <div className="relative">
-            <button
-              onClick={() => setRoleMenu((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-soft hover:border-primary hover:text-primary transition-colors"
-            >
-              Viewing as {ROLE_LABEL[role]}
-              <ChevronDown size={13} />
-            </button>
-            <AnimatePresence>
-              {roleMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-line bg-white shadow-lg"
-                >
-                  {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => switchRole(r)}
-                      className={cn(
-                        "block w-full px-4 py-2.5 text-left text-sm hover:bg-card",
-                        role === r && "text-primary font-semibold"
-                      )}
-                    >
-                      {ROLE_LABEL[r]} dashboard
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          <Link
-            to={ROLE_ROUTE[role]}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition-transform hover:scale-[1.03] active:scale-[0.98]"
-          >
-            Dashboard
-          </Link>
+          {user ? (
+            <>
+              <Link
+                to={ROLE_ROUTE[user.role]}
+                className="flex items-center gap-2 rounded-full border border-line py-1 pl-1 pr-3.5 text-xs font-semibold text-ink-soft hover:border-primary hover:text-primary transition-colors"
+              >
+                <Avatar name={user.name} size="sm" />
+                {ROLE_LABEL[user.role]} dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                aria-label="Sign out"
+                className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-ink-soft hover:text-status-red"
+              >
+                <LogOut size={14} /> Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="text-sm font-semibold text-ink-soft hover:text-ink">
+                Sign in
+              </Link>
+              <Link
+                to="/register"
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              >
+                Register
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -141,21 +131,40 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="mt-2 border-t border-line pt-3">
-                <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-                  Switch dashboard
-                </p>
-                {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => switchRole(r)}
-                    className={cn(
-                      "block w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-card",
-                      role === r && "text-primary font-semibold"
-                    )}
-                  >
-                    {ROLE_LABEL[r]}
-                  </button>
-                ))}
+                {user ? (
+                  <>
+                    <Link
+                      to={ROLE_ROUTE[user.role]}
+                      onClick={() => setOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-primary"
+                    >
+                      {ROLE_LABEL[user.role]} dashboard
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-1.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-status-red"
+                    >
+                      <LogOut size={14} /> Sign out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-card"
+                    >
+                      Sign in
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-primary"
+                    >
+                      Register
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

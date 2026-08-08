@@ -4,12 +4,16 @@ import {
   bloodRequests as initialRequests,
   donors as initialDonors,
   notifications as initialNotifications,
+  demoUsers,
   CURRENT_USER,
+  type DemoUser,
 } from "../data/mock";
 
 interface AppContextValue {
-  role: UserRole;
-  setRole: (r: UserRole) => void;
+  user: DemoUser | null;
+  login: (email: string, password: string) => { ok: boolean; error?: string };
+  logout: () => void;
+  role: UserRole | null;
   requests: BloodRequest[];
   donorsList: Donor[];
   notifications: AppNotification[];
@@ -25,19 +29,32 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<UserRole>("donor");
+  const [user, setUser] = useState<DemoUser | null>(null);
   const [requests, setRequests] = useState<BloodRequest[]>(initialRequests);
   const [donorsList, setDonorsList] = useState<Donor[]>(initialDonors);
   const [notifs, setNotifs] = useState<AppNotification[]>(initialNotifications);
 
   const value = useMemo<AppContextValue>(
     () => ({
-      role,
-      setRole,
+      user,
+      login: (email, password) => {
+        const match = demoUsers.find(
+          (u) => u.email.toLowerCase() === email.trim().toLowerCase()
+        );
+        if (!match) return { ok: false, error: "No account found with that email." };
+        if (match.password !== password) return { ok: false, error: "Incorrect password." };
+        setUser(match);
+        return { ok: true };
+      },
+      logout: () => setUser(null),
+      role: user?.role ?? null,
       requests,
       donorsList,
       notifications: notifs,
-      currentDonor: donorsList.find((d) => d.id === CURRENT_USER.donor.id) ?? donorsList[0],
+      currentDonor:
+        donorsList.find((d) => d.id === user?.refId) ??
+        donorsList.find((d) => d.id === CURRENT_USER.donor.id) ??
+        donorsList[0],
       acceptRequest: (requestId, donorId) => {
         setRequests((prev) =>
           prev.map((r) =>
@@ -80,7 +97,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
       },
     }),
-    [role, requests, donorsList, notifs]
+    [user, requests, donorsList, notifs]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -224,4 +224,20 @@ export const CURRENT_USER = {
   bloodbank: bloodBanks[0],
 };
 
+export interface DemoUser {
+  email: string;
+  password: string;
+  role: "donor" | "patient" | "hospital" | "bloodbank" | "admin";
+  name: string;
+  refId?: string; // links to a donor/hospital/bloodbank record
+}
+
+export const demoUsers: DemoUser[] = [
+  { email: "donor@demo.com", password: "donor123", role: "donor", name: CURRENT_USER.donor.name, refId: CURRENT_USER.donor.id },
+  { email: "patient@demo.com", password: "patient123", role: "patient", name: "Neha Verma" },
+  { email: "hospital@demo.com", password: "hospital123", role: "hospital", name: CURRENT_USER.hospital.name, refId: CURRENT_USER.hospital.id },
+  { email: "bank@demo.com", password: "bank123", role: "bloodbank", name: CURRENT_USER.bloodbank.name, refId: CURRENT_USER.bloodbank.id },
+  { email: "admin@demo.com", password: "admin123", role: "admin", name: "Platform Admin" },
+];
+
 export { BLOOD_GROUPS, CITIES };

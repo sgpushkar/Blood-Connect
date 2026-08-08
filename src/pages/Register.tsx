@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { Droplet, CheckCircle2 } from "lucide-react";
-import { useApp } from "../context/AppContext";
 import { BLOOD_GROUPS } from "../data/mock";
 import type { UserRole } from "../types";
 
@@ -22,18 +21,9 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const ROLE_ROUTE: Record<UserRole, string> = {
-  donor: "/dashboard/donor",
-  patient: "/dashboard/patient",
-  hospital: "/dashboard/hospital",
-  bloodbank: "/dashboard/bloodbank",
-  admin: "/dashboard/admin",
-};
-
 export default function Register() {
   const [role, setLocalRole] = useState<UserRole>("donor");
   const [done, setDone] = useState(false);
-  const { setRole } = useApp();
   const navigate = useNavigate();
 
   const {
@@ -46,9 +36,8 @@ export default function Register() {
     setDone(true);
   }
 
-  function goToDashboard() {
-    setRole(role);
-    navigate(ROLE_ROUTE[role]);
+  function goToLogin() {
+    navigate("/login");
   }
 
   if (done) {
@@ -59,14 +48,13 @@ export default function Register() {
         </span>
         <h1 className="mt-5 font-display text-2xl font-semibold">You're registered</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          A verification email is on its way. Once verified, your profile will be visible to
-          matching requests nearby.
+          A verification email is on its way. Once verified, sign in to reach your dashboard.
         </p>
         <button
-          onClick={goToDashboard}
+          onClick={goToLogin}
           className="mt-7 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-md shadow-primary/25"
         >
-          Go to my dashboard
+          Go to sign in
         </button>
       </div>
     );

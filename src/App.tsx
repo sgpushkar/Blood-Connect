@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Search from "./pages/Search";
 import Login from "./pages/Login";
@@ -27,11 +28,46 @@ export default function App() {
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/dashboard/donor" element={<DonorDashboard />} />
-              <Route path="/dashboard/patient" element={<PatientDashboard />} />
-              <Route path="/dashboard/hospital" element={<HospitalDashboard />} />
-              <Route path="/dashboard/bloodbank" element={<BloodBankDashboard />} />
-              <Route path="/dashboard/admin" element={<AdminDashboard />} />
+              <Route
+                path="/dashboard/donor"
+                element={
+                  <ProtectedRoute role="donor">
+                    <DonorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/patient"
+                element={
+                  <ProtectedRoute role="patient">
+                    <PatientDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/hospital"
+                element={
+                  <ProtectedRoute role="hospital">
+                    <HospitalDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/bloodbank"
+                element={
+                  <ProtectedRoute role="bloodbank">
+                    <BloodBankDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/admin"
+                element={
+                  <ProtectedRoute role="admin">
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
