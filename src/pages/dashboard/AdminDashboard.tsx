@@ -117,15 +117,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const verifyDonor = async (id: string) => {
-    try {
-      await gql(VERIFY_DONOR_MUTATION, { donorId: id });
-      await fetchData();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to verify donor.");
-    }
-  };
+
 
   const blockUser = async (id: string) => {
     if (!confirm("Are you sure you want to block this user?")) return;
