@@ -22,25 +22,27 @@ const ROLE_LABEL: Record<UserRole, string> = {
 };
 
 export default function Login() {
-  const { login } = useApp();
+  const { loginAsync } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const requiredRole = (location.state as { requiredRole?: UserRole } | null)?.requiredRole;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const result = login(email, password);
-    if (!result.ok) {
+    setLoading(true);
+    const result = await loginAsync(email, password);
+    setLoading(false);
+    if (!result.ok || !result.role) {
       setError(result.error ?? "Could not sign in.");
       return;
     }
-    const signedInUser = demoUsers.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())!;
-    navigate(ROLE_ROUTE[signedInUser.role]);
+    navigate(ROLE_ROUTE[result.role]);
   }
 
   function fillDemo(u: (typeof demoUsers)[number]) {
@@ -109,9 +111,10 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+            disabled={loading}
+            className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25 transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:hover:scale-100"
           >
-            Sign in
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 

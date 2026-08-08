@@ -3,19 +3,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
-import { Droplet, CheckCircle2 } from "lucide-react";
+import { Droplet, CheckCircle2, Loader2 } from "lucide-react";
 import { BLOOD_GROUPS } from "../data/mock";
 import type { UserRole } from "../types";
+import { gql, REGISTER_MUTATION } from "../lib/graphql";
 
 const schema = z.object({
   name: z.string().min(2, "Enter your full name"),
   email: z.string().email("Enter a valid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   phone: z.string().min(8, "Enter a valid phone number"),
   bloodGroup: z.string().optional(),
   city: z.string().min(2, "Enter your city"),
   age: z
     .string()
-    .refine((v) => Number(v) >= 18 && Number(v) <= 65, "Age must be between 18 and 65")
+    .refine((v) => !v || (Number(v) >= 18 && Number(v) <= 65), "Age must be between 18 and 65")
     .optional(),
 });
 
@@ -24,6 +26,8 @@ type FormValues = z.infer<typeof schema>;
 export default function Register() {
   const [role, setLocalRole] = useState<UserRole>("donor");
   const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const {
@@ -32,8 +36,48 @@ export default function Register() {
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
-  function onSubmit() {
-    setDone(true);
+  async function onSubmit(data: FormValues) {
+    setLoading(true);
+    setApiError(null);
+    try {
+      // Map frontend role format to GraphQL enum format
+      const roleMap: Record<UserRole, string> = {
+        donor: "DONOR",
+        patient: "PATIENT",
+        hospital: "HOSPITAL",
+        bloodbank: "BLOOD_BANK",
+        admin: "ADMIN",
+      };
+
+      const bloodGroupMap: Record<string, string> = {
+        "A+": "A_POS",
+        "A-": "A_NEG",
+        "B+": "B_POS",
+        "B-": "B_NEG",
+        "AB+": "AB_POS",
+        "AB-": "AB_NEG",
+        "O+": "O_POS",
+        "O-": "O_NEG",
+      };
+
+      await gql(REGISTER_MUTATION, {
+        input: {
+          email: data.email,
+          password: data.password,
+          name: data.name,
+          phone: data.phone,
+          role: roleMap[role],
+          city: data.city,
+          bloodGroup: data.bloodGroup && data.bloodGroup !== "Any" ? bloodGroupMap[data.bloodGroup] : undefined,
+          age: data.age ? Number(data.age) : undefined,
+        },
+      });
+      setDone(true);
+    } catch (err: any) {
+      setApiError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function goToLogin() {
@@ -95,6 +139,17 @@ export default function Register() {
           {errors.name && <p className="mt-1 text-xs text-status-red">{errors.name.message}</p>}
         </div>
 
+        <div>
+          <label className="text-xs font-semibold text-ink-soft">Password</label>
+          <input
+            {...register("password")}
+            type="password"
+            className="mt-1.5 w-full rounded-xl border border-line px-3 py-2.5 text-sm"
+            placeholder="••••••••"
+          />
+          {errors.password && <p className="mt-1 text-xs text-status-red">{errors.password.message}</p>}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-semibold text-ink-soft">Email</label>
@@ -151,11 +206,20 @@ export default function Register() {
           {errors.city && <p className="mt-1 text-xs text-status-red">{errors.city.message}</p>}
         </div>
 
+        {apiError && <p className="text-xs font-semibold text-status-red">{apiError}</p>}
+
         <button
           type="submit"
-          className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+          disabled={loading}
+          className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25 transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center gap-2"
         >
-          Create account
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin" size={16} /> Creating account...
+            </>
+          ) : (
+            "Create account"
+          )}
         </button>
       </form>
 

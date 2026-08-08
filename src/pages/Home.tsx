@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Users, Activity, Clock, Award, ArrowRight } from "lucide-react";
 import EmergencySearchBar from "../components/EmergencySearchBar";
 import { donors, bloodRequests } from "../data/mock";
+import { gql, NETWORK_STATS_QUERY, type NetworkStatsData } from "../lib/graphql";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
@@ -26,8 +28,37 @@ function AnimatedStat({ value, label, icon: Icon }: { value: string; label: stri
   );
 }
 
+// Fallback stats from mock data (used when the GraphQL server is unreachable)
+const MOCK_STATS = {
+  totalDonors: donors.length * 41,
+  availableDonors: donors.filter((d) => d.available).length,
+  livesSupported: 1140,
+};
+
 export default function Home() {
-  const availableDonors = donors.filter((d) => d.available).length;
+  const [stats, setStats] = useState({
+    totalDonors: MOCK_STATS.totalDonors,
+    availableDonors: MOCK_STATS.availableDonors,
+    livesSupported: MOCK_STATS.livesSupported,
+  });
+  const [live, setLive] = useState(false);
+
+  // Fetch live stats from GraphQL API
+  useEffect(() => {
+    gql<NetworkStatsData>(NETWORK_STATS_QUERY)
+      .then((data) => {
+        setStats({
+          totalDonors: data.networkStats.totalDonors,
+          availableDonors: data.networkStats.availableDonors,
+          livesSupported: data.networkStats.livesSupported,
+        });
+        setLive(true);
+      })
+      .catch(() => {
+        // Server unreachable — keep using mock data silently
+      });
+  }, []);
+
   const openCritical = bloodRequests.filter(
     (r) => r.status === "Open" && r.urgency === "Critical"
   ).length;
@@ -54,7 +85,8 @@ export default function Home() {
                 <span className="absolute h-full w-full animate-pulse-ring rounded-full bg-status-green opacity-75" />
                 <span className="relative h-1.5 w-1.5 rounded-full bg-status-green" />
               </span>
-              {availableDonors} donors online right now
+              {stats.availableDonors} donors online right now
+              {live && <span className="ml-1 text-status-green">● live</span>}
             </motion.span>
 
             <motion.h1
@@ -98,10 +130,10 @@ export default function Home() {
             variants={{ show: { transition: { staggerChildren: 0.07 } } }}
             className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4"
           >
-            <AnimatedStat value={`${donors.length * 41}+`} label="Registered donors" icon={Users} />
-            <AnimatedStat value={`${availableDonors}`} label="Available right now" icon={Activity} />
+            <AnimatedStat value={`${stats.totalDonors.toLocaleString()}+`} label="Registered donors" icon={Users} />
+            <AnimatedStat value={`${stats.availableDonors}`} label="Available right now" icon={Activity} />
             <AnimatedStat value="6 min" label="Median match time" icon={Clock} />
-            <AnimatedStat value="1,140+" label="Lives supported" icon={Award} />
+            <AnimatedStat value={`${stats.livesSupported.toLocaleString()}+`} label="Lives supported" icon={Award} />
           </motion.div>
         </div>
       </section>

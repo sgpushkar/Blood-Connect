@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { SlidersHorizontal, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { SlidersHorizontal, MapPin, Phone, ShieldCheck, Loader2 } from "lucide-react";
 import { donors as ALL_DONORS, CITIES } from "../data/mock";
 import { BLOOD_GROUPS } from "../data/mock";
 import { BloodGroupChip, Avatar, BadgePill } from "../components/Chips";
 import StatusPill from "../components/StatusPill";
 import { daysUntilEligible, formatDate } from "../lib/utils";
+import { gql, DONORS_QUERY } from "../lib/graphql";
+import type { Donor } from "../types";
 
 type SortKey = "distance" | "recent" | "donations";
 
@@ -20,8 +22,29 @@ export default function Search() {
   const [sort, setSort] = useState<SortKey>("distance");
   const [showFilters, setShowFilters] = useState(false);
 
+  const [liveDonors, setLiveDonors] = useState<Donor[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    const filter: Record<string, any> = { maxAge };
+    if (group !== "Any") filter.bloodGroup = group;
+    if (city !== "Any") filter.city = city;
+    if (onlyAvailable) filter.availableOnly = true;
+    if (onlyEligible) filter.eligibleOnly = true;
+
+    gql<{ donors: { edges: { node: Donor }[] } }>(DONORS_QUERY, { filter })
+      .then((data) => {
+        setLiveDonors(data.donors.edges.map((e) => e.node));
+      })
+      .catch(() => {
+        setLiveDonors(null); // Fallback to mock
+      })
+      .finally(() => setLoading(false));
+  }, [group, city, onlyAvailable, onlyEligible, maxAge]);
+
   const results = useMemo(() => {
-    let list = ALL_DONORS.filter((d) => {
+    let list = liveDonors ?? ALL_DONORS.filter((d) => {
       if (group !== "Any" && d.bloodGroup !== group) return false;
       if (city !== "Any" && d.city !== city) return false;
       if (onlyAvailable && !d.available) return false;
@@ -40,7 +63,7 @@ export default function Search() {
       list = [...list].sort((a, b) => b.totalDonations - a.totalDonations);
     }
     return list;
-  }, [group, city, onlyAvailable, onlyEligible, maxAge, sort]);
+  }, [liveDonors, group, city, onlyAvailable, onlyEligible, maxAge, sort]);
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-10 md:px-8">
@@ -148,7 +171,12 @@ export default function Search() {
             </select>
           </div>
 
-          {results.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line p-14 text-sm text-ink-soft">
+              <Loader2 className="mb-3 animate-spin text-primary" size={24} />
+              Loading donors...
+            </div>
+          ) : results.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-line p-14 text-center text-sm text-ink-soft">
               No donors match these filters yet. Try widening the search.
             </div>
