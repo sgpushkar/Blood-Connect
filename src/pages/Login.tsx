@@ -66,7 +66,7 @@ export default function Login() {
           <p className="mt-1 text-sm text-ink-soft">
             {requiredRole
               ? `Sign in with a ${ROLE_LABEL[requiredRole]} account to continue.`
-              : "Sign in to your Blood Donation Network account"}
+              : "Sign in to your Blood Connect account"}
           </p>
         </div>
 

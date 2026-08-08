@@ -48,7 +48,7 @@ export default function Navbar() {
             <Droplet size={16} fill="white" strokeWidth={0} />
           </span>
           <span className="font-display text-lg font-semibold tracking-tight">
-            Blood Donation Network
+            Blood Connect
           </span>
         </Link>
 

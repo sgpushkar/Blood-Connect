@@ -11,7 +11,7 @@ export default function Footer() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
                 <Droplet size={16} fill="white" strokeWidth={0} />
               </span>
-              <span className="font-display text-lg font-semibold">Blood Donation Network</span>
+              <span className="font-display text-lg font-semibold">Blood Connect</span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-ink-soft">
               Connecting Donors. Saving Lives. A real-time network matching donors, patients,
@@ -42,14 +42,14 @@ export default function Footer() {
             <p className="text-sm font-semibold">Emergency contact</p>
             <ul className="mt-3 space-y-2.5 text-sm text-ink-soft">
               <li className="flex items-center gap-2"><Phone size={14} /> 1800-BLOOD-NOW</li>
-              <li className="flex items-center gap-2"><Mail size={14} /> help@blooddonationnetwork.org</li>
+              <li className="flex items-center gap-2"><Mail size={14} /> help@bloodconnect.org</li>
               <li className="flex items-center gap-2"><MapPin size={14} /> Available in 5 cities</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-xs text-ink-soft md:flex-row">
-          <p>&copy; {new Date().getFullYear()} Blood Donation Network. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Blood Connect. All rights reserved.</p>
           <p>Every 2 seconds, someone needs blood.</p>
         </div>
       </div>

@@ -16,7 +16,7 @@ export default function HowItWorks() {
     <div className="mx-auto max-w-4xl px-5 py-16 md:px-8">
       <div className="text-center">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">The emergency alert system</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold">How Blood Donation Network works</h1>
+        <h1 className="mt-3 font-display text-4xl font-semibold">How Blood Connect works</h1>
         <p className="mx-auto mt-4 max-w-xl text-ink-soft">
           From a submitted request to a completed donation, every step happens in real time —
           here's the full path a request takes.
