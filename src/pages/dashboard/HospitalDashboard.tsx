@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   LayoutGrid,
   ClipboardList,
@@ -9,9 +9,8 @@ import {
 import DashboardShell, { StatCard } from "../../components/DashboardShell";
 import { BloodGroupChip, Avatar } from "../../components/Chips";
 import StatusPill, { toneForRequestStatus, toneForUrgency } from "../../components/StatusPill";
-import { useApp } from "../../context/AppContext";
-import { donors, CURRENT_USER } from "../../data/mock";
 import { formatDate, distanceKm } from "../../lib/utils";
+import { gql, ME_HOSPITAL_QUERY, BLOOD_REQUESTS_QUERY, DONORS_QUERY } from "../../lib/graphql";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -21,15 +20,76 @@ const TABS = [
   { key: "broadcast", label: "Emergency broadcast", icon: Megaphone },
 ];
 
+const mapBg = (bg: string) => {
+  const m: Record<string, string> = {
+    A_POS: "A+", A_NEG: "A-", B_POS: "B+", B_NEG: "B-",
+    AB_POS: "AB+", AB_NEG: "AB-", O_POS: "O+", O_NEG: "O-"
+  };
+  return m[bg] || bg;
+};
+
 export default function HospitalDashboard() {
   const [tab, setTab] = useState("overview");
-  const { requests } = useApp();
-  const hospital = CURRENT_USER.hospital;
-  const hospitalRequests = requests.filter((r) => r.hospital === hospital.name);
-  const nearbyDonors = donors
-    .map((d) => ({ ...d, km: distanceKm(hospital, d) }))
-    .sort((a, b) => a.km - b.km)
-    .slice(0, 8);
+  
+  const [hospital, setHospital] = useState<any>(null);
+  const [hospitalRequests, setHospitalRequests] = useState<any[]>([]);
+  const [nearbyDonors, setNearbyDonors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    try {
+      // 1. Fetch Hospital Profile
+      const meData = await gql<{ me: any }>(ME_HOSPITAL_QUERY);
+      const fetchedHospital = meData.me.hospital;
+      setHospital(fetchedHospital);
+
+      if (!fetchedHospital) return;
+
+      // 2. Fetch requests for this hospital
+      const requestsData = await gql<any>(BLOOD_REQUESTS_QUERY, {
+        filter: { hospitalId: fetchedHospital.id },
+        pagination: { first: 50 },
+      });
+      const reqs = requestsData.bloodRequests.edges.map((e: any) => ({
+        ...e.node,
+        bloodGroup: mapBg(e.node.bloodGroup)
+      }));
+      setHospitalRequests(reqs);
+
+      // 3. Fetch nearby available donors
+      const donorsData = await gql<any>(DONORS_QUERY, {
+        filter: { city: fetchedHospital.city, availableOnly: true },
+        pagination: { first: 20 },
+      });
+      const donors = donorsData.donors.edges.map((e: any) => ({
+        ...e.node,
+        bloodGroup: mapBg(e.node.bloodGroup),
+        km: distanceKm(fetchedHospital, e.node)
+      })).sort((a: any, b: any) => a.km - b.km);
+      setNearbyDonors(donors);
+
+    } catch (err) {
+      console.error("Failed to fetch hospital data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleBroadcast = () => {
+    alert("Broadcast feature will be integrated with backend notifications system in a future update.");
+  };
+
+  if (loading) {
+    return <DashboardShell title="Loading..." roleLabel="Hospital" name="" tabs={TABS} activeTab={tab} onTabChange={setTab}><div className="p-8 text-center text-ink-soft">Loading data...</div></DashboardShell>;
+  }
+
+  if (!hospital) {
+    return <DashboardShell title="Error" roleLabel="Hospital" name="" tabs={TABS} activeTab={tab} onTabChange={setTab}><div className="p-8 text-center text-red-500">Could not load hospital profile.</div></DashboardShell>;
+  }
 
   return (
     <DashboardShell
@@ -44,10 +104,10 @@ export default function HospitalDashboard() {
       {tab === "overview" && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-4">
-            <StatCard label="Active requests" value={hospitalRequests.filter(r => r.status !== "Fulfilled" && r.status !== "Cancelled").length} icon={ClipboardList} />
-            <StatCard label="Donors nearby" value={nearbyDonors.filter(d => d.available).length} icon={Users} />
+            <StatCard label="Active requests" value={hospitalRequests.filter(r => r.status !== "FULFILLED" && r.status !== "CANCELLED").length} icon={ClipboardList} />
+            <StatCard label="Donors nearby" value={nearbyDonors.length} icon={Users} />
             <StatCard label="Transfusion beds" value={hospital.bedsForTransfusion} icon={Boxes} />
-            <StatCard label="Fulfilled this month" value={hospitalRequests.filter(r => r.status === "Fulfilled").length} icon={LayoutGrid} />
+            <StatCard label="Fulfilled this month" value={hospitalRequests.filter(r => r.status === "FULFILLED").length} icon={LayoutGrid} />
           </div>
           <div>
             <p className="mb-3 text-sm font-semibold">Recent requests</p>
@@ -64,6 +124,9 @@ export default function HospitalDashboard() {
                   <StatusPill tone={toneForRequestStatus(r.status)} dot>{r.status}</StatusPill>
                 </div>
               ))}
+              {hospitalRequests.length === 0 && (
+                <p className="text-sm text-ink-soft text-center py-4">No recent requests.</p>
+              )}
             </div>
           </div>
         </div>
@@ -93,6 +156,9 @@ export default function HospitalDashboard() {
                   <td className="px-4 py-3 text-ink-soft">{formatDate(r.requiredDate)}</td>
                 </tr>
               ))}
+              {hospitalRequests.length === 0 && (
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-ink-soft">No requests found.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -106,7 +172,7 @@ export default function HospitalDashboard() {
                 <Avatar name={d.name} />
                 <div>
                   <p className="text-sm font-semibold">{d.name}</p>
-                  <p className="text-xs text-ink-soft">{d.km.toFixed(1)} km · {d.city}</p>
+                  <p className="text-xs text-ink-soft">{d.km?.toFixed(1)} km · {d.city}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5">
@@ -117,6 +183,9 @@ export default function HospitalDashboard() {
               </div>
             </div>
           ))}
+          {nearbyDonors.length === 0 && (
+            <p className="col-span-2 text-center text-sm text-ink-soft py-4">No available donors nearby.</p>
+          )}
         </div>
       )}
 
@@ -139,7 +208,10 @@ export default function HospitalDashboard() {
             placeholder="e.g. Urgent need for O- blood, 3 units, trauma case"
             className="w-full rounded-xl border border-line px-3 py-2.5 text-sm"
           />
-          <button className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25">
+          <button 
+            onClick={handleBroadcast}
+            className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-md shadow-primary/25"
+          >
             Broadcast to nearby donors
           </button>
         </div>

@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { LayoutGrid, Droplets, PackagePlus, FileBarChart } from "lucide-react";
 import DashboardShell, { StatCard } from "../../components/DashboardShell";
 import { BloodGroupChip } from "../../components/Chips";
-import { CURRENT_USER, donations } from "../../data/mock";
-import { formatDate } from "../../lib/utils";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { gql, ME_BLOOD_BANK_QUERY } from "../../lib/graphql";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -19,13 +18,59 @@ function stockTone(units: number) {
   return "text-status-green bg-status-green-soft";
 }
 
+const mapBg = (bg: string) => {
+  const m: Record<string, string> = {
+    A_POS: "A+", A_NEG: "A-", B_POS: "B+", B_NEG: "B-",
+    AB_POS: "AB+", AB_NEG: "AB-", O_POS: "O+", O_NEG: "O-"
+  };
+  return m[bg] || bg;
+};
+
 export default function BloodBankDashboard() {
   const [tab, setTab] = useState("overview");
-  const bank = CURRENT_USER.bloodbank;
-  const stockEntries = Object.entries(bank.stock);
+  const [bank, setBank] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const data = await gql<{ me: any }>(ME_BLOOD_BANK_QUERY);
+      if (data.me.bloodBank) {
+        setBank(data.me.bloodBank);
+      }
+    } catch (err) {
+      console.error("Failed to load blood bank data", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (loading) {
+    return <DashboardShell title="Loading..." roleLabel="Blood Bank" name="" tabs={TABS} activeTab={tab} onTabChange={setTab}><div className="p-8 text-center text-ink-soft">Loading data...</div></DashboardShell>;
+  }
+
+  if (!bank) {
+    return <DashboardShell title="Error" roleLabel="Blood Bank" name="" tabs={TABS} activeTab={tab} onTabChange={setTab}><div className="p-8 text-center text-status-red">Could not load blood bank profile.</div></DashboardShell>;
+  }
+
+  // Format stock for UI
+  const stockMap: Record<string, number> = {};
+  bank.stock?.forEach((s: any) => {
+    stockMap[mapBg(s.bloodGroup)] = s.units;
+  });
+  
+  // Ensure all common groups exist in the map
+  const groups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  groups.forEach(g => {
+    if (stockMap[g] === undefined) stockMap[g] = 0;
+  });
+
+  const stockEntries = Object.entries(stockMap).sort((a, b) => groups.indexOf(a[0]) - groups.indexOf(b[0]));
   const totalUnits = stockEntries.reduce((sum, [, v]) => sum + v, 0);
   const lowStock = stockEntries.filter(([, v]) => v < 10);
-
   const chartData = stockEntries.map(([group, units]) => ({ group, units }));
 
   return (
@@ -43,7 +88,7 @@ export default function BloodBankDashboard() {
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard label="Total units" value={totalUnits} icon={Droplets} />
             <StatCard label="Low stock groups" value={lowStock.length} icon={FileBarChart} />
-            <StatCard label="Donations logged" value={donations.length} icon={PackagePlus} />
+            <StatCard label="Donations logged" value={0} icon={PackagePlus} />
           </div>
           <div className="rounded-2xl border border-line bg-white p-5">
             <p className="mb-4 text-sm font-semibold">Stock by blood group</p>
@@ -80,7 +125,7 @@ export default function BloodBankDashboard() {
           <p className="text-sm font-semibold">Log a new donation</p>
           <div className="grid grid-cols-2 gap-3">
             <select className="rounded-xl border border-line px-3 py-2.5 text-sm">
-              {stockEntries.map(([g]) => (
+              {groups.map((g) => (
                 <option key={g}>{g}</option>
               ))}
             </select>
@@ -105,14 +150,11 @@ export default function BloodBankDashboard() {
               </tr>
             </thead>
             <tbody>
-              {donations.slice(0, 10).map((d) => (
-                <tr key={d.id} className="border-t border-line">
-                  <td className="px-4 py-3 font-mono text-xs text-primary">{d.certificateId}</td>
-                  <td className="px-4 py-3">{d.hospital}</td>
-                  <td className="px-4 py-3">{d.units}</td>
-                  <td className="px-4 py-3 text-ink-soft">{formatDate(d.date)}</td>
-                </tr>
-              ))}
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-ink-soft">
+                  Donation reporting is currently unavailable.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

@@ -252,6 +252,151 @@ export const MARK_NOTIFICATION_READ_MUTATION = `
   }
 `;
 
+export const MY_DONOR_PROFILE_QUERY = `
+  query MyDonorProfile {
+    myDonorProfile {
+      id
+      name
+      age
+      gender
+      bloodGroup
+      weightKg
+      phone
+      email
+      city
+      address
+      lat
+      lng
+      lastDonation
+      available
+      totalDonations
+      badge
+      verified
+      avatarSeed
+    }
+  }
+`;
+
+export const ME_HOSPITAL_QUERY = `
+  query MeHospital {
+    me {
+      id
+      name
+      hospital {
+        id
+        name
+        city
+        address
+        verified
+        activeRequests
+        bedsForTransfusion
+        lat
+        lng
+      }
+    }
+  }
+`;
+
+export const MY_DONATIONS_QUERY = `
+  query MyDonations {
+    myDonations {
+      id
+      date
+      units
+      certificateId
+      hospital {
+        name
+      }
+    }
+  }
+`;
+
+export const ME_BLOOD_BANK_QUERY = `
+  query MeBloodBank {
+    me {
+      id
+      name
+      bloodBank {
+        id
+        name
+        city
+        address
+        stock {
+          bloodGroup
+          units
+        }
+      }
+    }
+  }
+`;
+
+export const HOSPITALS_QUERY = `
+  query Hospitals {
+    hospitals {
+      id
+      name
+      city
+      address
+      verified
+    }
+  }
+`;
+
+export const BLOOD_BANKS_QUERY = `
+  query BloodBanks {
+    bloodBanks {
+      id
+      name
+      city
+    }
+  }
+`;
+
+export const MY_REQUESTS_QUERY = `
+  query MyRequests {
+    myRequests {
+      id
+      patientName
+      bloodGroup
+      unitsRequired
+      urgency
+      status
+      createdAt
+      requiredDate
+      hospitalAddress
+      matchedCount
+      hospital {
+        id
+        name
+        city
+      }
+      acceptedDonors {
+        id
+        name
+        bloodGroup
+      }
+    }
+  }
+`;
+
+export const VERIFY_DONOR_MUTATION = `
+  mutation VerifyDonor($donorId: ID!) {
+    verifyDonor(donorId: $donorId) {
+      id
+      verified
+    }
+  }
+`;
+
+export const VERIFY_HOSPITAL_MUTATION = `
+  mutation VerifyHospital($hospitalId: ID!) {
+    verifyHospital(hospitalId: $hospitalId) {
+      id
+      verified
+    }
+  }
+`;
+
 export interface NetworkStatsData {
   networkStats: {
     totalDonors: number;

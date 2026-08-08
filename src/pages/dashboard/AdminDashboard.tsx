@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   LayoutGrid,
   Users,
@@ -10,7 +10,6 @@ import {
 import DashboardShell, { StatCard } from "../../components/DashboardShell";
 import { Avatar, BloodGroupChip } from "../../components/Chips";
 import StatusPill from "../../components/StatusPill";
-import { donors, hospitals, bloodBanks, monthlyStats, bloodGroupDistribution } from "../../data/mock";
 import {
   LineChart,
   Line,
@@ -23,6 +22,16 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import { 
+  gql, 
+  NETWORK_STATS_QUERY, 
+  DONORS_QUERY, 
+  HOSPITALS_QUERY, 
+  BLOOD_BANKS_QUERY,
+  VERIFY_DONOR_MUTATION,
+  VERIFY_HOSPITAL_MUTATION 
+} from "../../lib/graphql";
+import { monthlyStats, bloodGroupDistribution } from "../../data/mock";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -43,10 +52,76 @@ const LOGS = [
   { time: "07:58", event: "User flagged for review — duplicate profile" },
 ];
 
+const mapBg = (bg: string) => {
+  const m: Record<string, string> = {
+    A_POS: "A+", A_NEG: "A-", B_POS: "B+", B_NEG: "B-",
+    AB_POS: "AB+", AB_NEG: "AB-", O_POS: "O+", O_NEG: "O-"
+  };
+  return m[bg] || bg;
+};
+
 export default function AdminDashboard() {
   const [tab, setTab] = useState("overview");
-  const unverifiedDonors = donors.filter((d) => !d.verified);
-  const unverifiedHospitals = hospitals.filter((h) => !h.verified);
+  
+  const [stats, setStats] = useState<any>(null);
+  const [donors, setDonors] = useState<any[]>([]);
+  const [hospitals, setHospitals] = useState<any[]>([]);
+  const [bloodBanks, setBloodBanks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [sData, dData, hData, bData] = await Promise.all([
+        gql<any>(NETWORK_STATS_QUERY),
+        gql<any>(DONORS_QUERY, { pagination: { first: 100 } }),
+        gql<any>(HOSPITALS_QUERY),
+        gql<any>(BLOOD_BANKS_QUERY)
+      ]);
+      setStats(sData.networkStats);
+      
+      const mappedDonors = dData.donors.edges.map((e: any) => ({
+        ...e.node,
+        bloodGroup: mapBg(e.node.bloodGroup)
+      }));
+      setDonors(mappedDonors);
+      
+      setHospitals(hData.hospitals);
+      setBloodBanks(bData.bloodBanks);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const verifyDonor = async (id: string) => {
+    try {
+      await gql(VERIFY_DONOR_MUTATION, { donorId: id });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const verifyHospital = async (id: string) => {
+    try {
+      await gql(VERIFY_HOSPITAL_MUTATION, { hospitalId: id });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (loading) {
+    return <DashboardShell title="Loading..." roleLabel="Admin" name="" tabs={TABS} activeTab={tab} onTabChange={setTab}><div className="p-8 text-center text-ink-soft">Loading data...</div></DashboardShell>;
+  }
+
+  const unverifiedDonors = donors.filter(d => !d.verified);
+  const unverifiedHospitals = hospitals.filter(h => !h.verified);
 
   return (
     <DashboardShell
@@ -61,14 +136,14 @@ export default function AdminDashboard() {
       {tab === "overview" && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-4">
-            <StatCard label="Total donors" value={donors.length} icon={Users} />
-            <StatCard label="Hospitals" value={hospitals.length} icon={Building2} />
-            <StatCard label="Blood banks" value={bloodBanks.length} icon={Building2} />
+            <StatCard label="Total donors" value={stats?.totalDonors || 0} icon={Users} />
+            <StatCard label="Hospitals" value={stats?.registeredHospitals || 0} icon={Building2} />
+            <StatCard label="Blood banks" value={stats?.registeredBloodBanks || 0} icon={Building2} />
             <StatCard label="Pending verifications" value={unverifiedDonors.length + unverifiedHospitals.length} icon={ShieldCheck} />
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-2xl border border-line bg-white p-5">
-              <p className="mb-4 text-sm font-semibold">Monthly donations vs requests</p>
+              <p className="mb-4 text-sm font-semibold">Monthly donations vs requests (Mock)</p>
               <div style={{ width: "100%", height: 240 }}>
                 <ResponsiveContainer>
                   <LineChart data={monthlyStats}>
@@ -82,7 +157,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="rounded-2xl border border-line bg-white p-5">
-              <p className="mb-4 text-sm font-semibold">Donor blood group distribution</p>
+              <p className="mb-4 text-sm font-semibold">Donor blood group distribution (Mock)</p>
               <div style={{ width: "100%", height: 240 }}>
                 <ResponsiveContainer>
                   <PieChart>
@@ -173,27 +248,55 @@ export default function AdminDashboard() {
       )}
 
       {tab === "verify" && (
-        <div className="space-y-2">
-          {unverifiedDonors.map((d) => (
-            <div key={d.id} className="flex items-center justify-between rounded-xl border border-line bg-white p-4">
-              <div className="flex items-center gap-3">
-                <Avatar name={d.name} size="sm" />
-                <div>
-                  <p className="text-sm font-medium">{d.name}</p>
-                  <p className="text-xs text-ink-soft">{d.bloodGroup} · {d.city}</p>
+        <div className="space-y-6">
+          <div>
+            <p className="mb-3 text-sm font-semibold">Pending Donors</p>
+            <div className="space-y-2">
+              {unverifiedDonors.map((d) => (
+                <div key={d.id} className="flex items-center justify-between rounded-xl border border-line bg-white p-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={d.name} size="sm" />
+                    <div>
+                      <p className="text-sm font-medium">{d.name}</p>
+                      <p className="text-xs text-ink-soft">{d.bloodGroup} · {d.city}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => verifyDonor(d.id)} className="rounded-full bg-status-green-soft px-3 py-1.5 text-xs font-semibold text-status-green">Approve</button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <button className="rounded-full bg-status-green-soft px-3 py-1.5 text-xs font-semibold text-status-green">Approve</button>
-                <button className="rounded-full bg-status-red-soft px-3 py-1.5 text-xs font-semibold text-status-red">Reject</button>
-              </div>
+              ))}
+              {unverifiedDonors.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-line p-8 text-center text-sm text-ink-soft">
+                  No pending donors.
+                </p>
+              )}
             </div>
-          ))}
-          {unverifiedDonors.length === 0 && (
-            <p className="rounded-2xl border border-dashed border-line p-8 text-center text-sm text-ink-soft">
-              No pending verifications.
-            </p>
-          )}
+          </div>
+
+          <div>
+            <p className="mb-3 text-sm font-semibold">Pending Hospitals</p>
+            <div className="space-y-2">
+              {unverifiedHospitals.map((h) => (
+                <div key={h.id} className="flex items-center justify-between rounded-xl border border-line bg-white p-4">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="text-sm font-medium">{h.name}</p>
+                      <p className="text-xs text-ink-soft">{h.city}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => verifyHospital(h.id)} className="rounded-full bg-status-green-soft px-3 py-1.5 text-xs font-semibold text-status-green">Approve</button>
+                  </div>
+                </div>
+              ))}
+              {unverifiedHospitals.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-line p-8 text-center text-sm text-ink-soft">
+                  No pending hospitals.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
