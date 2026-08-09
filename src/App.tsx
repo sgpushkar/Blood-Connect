@@ -4,6 +4,7 @@ import { ToastProvider } from "./context/ToastContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
+import EmergencyOverlay from "./components/EmergencyOverlay";
 import Home from "./pages/Home";
 import Search from "./pages/Search";
 import Login from "./pages/Login";
@@ -22,6 +23,7 @@ export default function App() {
       <ToastProvider>
         <BrowserRouter>
           <div className="flex min-h-screen flex-col">
+            <EmergencyOverlay />
             <Navbar />
           <main className="flex-1">
             <Routes>

@@ -10,6 +10,7 @@ import { daysUntilEligible, formatDate } from "../lib/utils";
 import { gql, DONORS_QUERY } from "../lib/graphql";
 import type { Donor } from "../types";
 import { useToast } from "../context/ToastContext";
+import MapboxView from "../components/MapboxView";
 
 type SortKey = "distance" | "recent" | "donations";
 
@@ -22,6 +23,7 @@ export default function Search() {
   const [maxAge, setMaxAge] = useState(60);
   const [sort, setSort] = useState<SortKey>("distance");
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   const [liveDonors, setLiveDonors] = useState<Donor[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -76,12 +78,30 @@ export default function Search() {
           <h1 className="mt-2 font-display text-3xl font-semibold">Search verified donors</h1>
           <p className="mt-1 text-sm text-ink-soft">{results.length} donors match your filters</p>
         </div>
-        <button
-          onClick={() => setShowFilters((v) => !v)}
-          className="flex items-center gap-2 self-start rounded-full border border-line px-4 py-2 text-sm font-semibold md:hidden"
-        >
-          <SlidersHorizontal size={15} /> Filters
-        </button>
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-card"
+                >
+                  <Filter size={16} /> Filters
+                </button>
+                <div className="flex rounded-xl border border-line bg-white p-1">
+                  <button 
+                    onClick={() => setViewMode("list")}
+                    className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${viewMode === "list" ? "bg-ink text-white" : "text-ink-soft hover:bg-card hover:text-ink"}`}
+                  >
+                    List
+                  </button>
+                  <button 
+                    onClick={() => setViewMode("map")}
+                    className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${viewMode === "map" ? "bg-ink text-white" : "text-ink-soft hover:bg-card hover:text-ink"}`}
+                  >
+                    Map
+                  </button>
+                </div>
+              </div>
+        </div>
       </div>
 
       <div className="mt-8 grid gap-8 md:grid-cols-[260px_1fr]">
@@ -183,6 +203,10 @@ export default function Search() {
             <div className="rounded-2xl border border-dashed border-line p-14 text-center text-sm text-ink-soft">
               No donors match these filters yet. Try widening the search.
             </div>
+          ) : viewMode === "map" ? (
+            <div className="mt-6">
+              <MapboxView donors={results} />
+            </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((d, i) => {
@@ -256,6 +280,7 @@ export default function Search() {
                 );
               })}
             </div>
+            )}
           )}
         </div>
       </div>

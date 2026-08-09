@@ -41,7 +41,18 @@ const TABS = [
   { key: "orgs", label: "Hospitals & banks", icon: Building2 },
   { key: "verify", label: "Verification", icon: ShieldCheck },
   { key: "analytics", label: "Analytics", icon: FileBarChart },
+  { key: "insights", label: "AI Insights", icon: Terminal },
   { key: "logs", label: "System logs", icon: Terminal },
+];
+
+const mockPredictiveData = [
+  { day: "Today", supply: 120, demand: 90 },
+  { day: "+1 Day", supply: 110, demand: 95 },
+  { day: "+2 Days", supply: 105, demand: 110 },
+  { day: "+3 Days", supply: 90, demand: 130 },
+  { day: "+4 Days", supply: 70, demand: 145 },
+  { day: "+5 Days", supply: 60, demand: 155 },
+  { day: "+6 Days", supply: 55, demand: 160 },
 ];
 
 const PIE_COLORS = ["#D32F2F", "#EF5350", "#B71C1C", "#E8890C", "#1F9D55", "#5B5B5B", "#EAB308", "#0EA5E9"];
@@ -349,6 +360,56 @@ export default function AdminDashboard() {
           <StatCard label="Success rate" value="87%" hint="Requests matched within 24h" icon={FileBarChart} />
           <StatCard label="Avg. match time" value="6 min" icon={FileBarChart} />
           <StatCard label="Active this month" value={donors.filter(d => d.available).length} icon={Users} />
+        </div>
+      )}
+
+      {tab === "insights" && (
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-[#E1E4E8] bg-gradient-to-b from-white to-[#F8FAFC] p-8 shadow-sm">
+            <div className="mb-6 flex items-start justify-between">
+              <div>
+                <h3 className="flex items-center gap-2 font-display text-2xl font-bold text-ink">
+                  <span className="text-primary">✨</span> AI Predictive Analytics
+                </h3>
+                <p className="mt-1 text-sm text-ink-soft">Forecasting blood supply vs. demand across the network based on historical trends.</p>
+              </div>
+              <div className="rounded-full bg-status-red-soft px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-status-red">
+                Critical Alert
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer>
+                  <LineChart data={mockPredictiveData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#888" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: "#888" }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: "20px" }} />
+                    <Line type="monotone" name="Predicted Supply (Units)" dataKey="supply" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" name="Predicted Demand (Units)" dataKey="demand" stroke="#EF4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+                  <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">Insight 1</p>
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-ink">
+                    <span className="text-status-red font-bold">78% probability</span> of a critical <span className="font-bold">O- shortage</span> in the next 3 days due to upcoming scheduled surgeries and low current inventory.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+                  <p className="text-xs font-bold uppercase tracking-wider text-ink-soft">Action Recommendation</p>
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-ink">
+                    Recommend initiating a targeted emergency broadcast to O- and O+ donors within a 15km radius of major hospitals immediately.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

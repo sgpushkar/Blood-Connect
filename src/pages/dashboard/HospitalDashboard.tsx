@@ -12,6 +12,7 @@ import StatusPill, { toneForRequestStatus, toneForUrgency } from "../../componen
 import { formatDate, distanceKm } from "../../lib/utils";
 import { gql, ME_HOSPITAL_QUERY, BLOOD_REQUESTS_QUERY, DONORS_QUERY, BROADCAST_EMERGENCY_MUTATION, COMPLETE_REQUEST_MUTATION } from "../../lib/graphql";
 import { useToast } from "../../context/ToastContext";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -19,6 +20,15 @@ const TABS = [
   { key: "donors", label: "Nearby donors", icon: Users },
   { key: "inventory", label: "Inventory", icon: Boxes },
   { key: "broadcast", label: "Emergency broadcast", icon: Megaphone },
+  { key: "insights", label: "AI Insights", icon: Search },
+];
+
+const mockPredictiveData = [
+  { day: "Today", supply: 45, demand: 50 },
+  { day: "+1 Day", supply: 40, demand: 55 },
+  { day: "+2 Days", supply: 35, demand: 60 },
+  { day: "+3 Days", supply: 20, demand: 75 },
+  { day: "+4 Days", supply: 15, demand: 85 },
 ];
 
 const mapBg = (bg: string) => {
@@ -96,6 +106,15 @@ export default function HospitalDashboard() {
       });
       showToast("Emergency broadcast sent to nearby donors!", "success");
       setBroadcastMsg("");
+      
+      // Dispatch mock real-time event for demo purposes
+      window.dispatchEvent(new CustomEvent("emergency_broadcast", {
+        detail: {
+          message: broadcastMsg,
+          bloodGroup: broadcastBg,
+          timestamp: Date.now()
+        }
+      }));
     } catch (err) {
       console.error(err);
       showToast("Failed to send broadcast.", "error");

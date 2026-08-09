@@ -31,6 +31,7 @@ const TABS = [
   { key: "requests", label: "Nearby requests", icon: BellRing },
   { key: "history", label: "Donation history", icon: History },
   { key: "rewards", label: "Rewards", icon: Award },
+  { key: "impact", label: "My Impact", icon: Award },
 ];
 
 const mapBg = (bg: string) => {
@@ -359,6 +360,46 @@ export default function DonorDashboard() {
               {(current.totalDonations || 0) * 3}
             </p>
             <p className="mt-1 text-sm text-ink-soft">Estimated lives touched through your donations</p>
+          </div>
+        </div>
+      )}
+
+      {tab === "impact" && (
+        <div className="mx-auto max-w-sm rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-[#FF4B4B] to-[#990000] text-white p-8 text-center relative group">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+          
+          <div className="relative z-10">
+            <p className="text-xs font-bold tracking-widest text-white/70 uppercase">2026 Impact Report</p>
+            <h3 className="mt-4 font-display text-4xl font-black">{current.name.split(" ")[0]}</h3>
+            <p className="mt-1 text-lg text-white/90">A true lifesaver</p>
+            
+            <div className="mt-8 mb-8 flex justify-center">
+              <div className="rounded-full bg-white/20 p-4 backdrop-blur-sm border border-white/30 shadow-[0_0_40px_rgba(255,255,255,0.3)]">
+                <Award size={64} className="text-white" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                <p className="text-xs font-medium text-white/70 uppercase tracking-wide">Donations</p>
+                <p className="mt-1 text-3xl font-bold">{current.totalDonations || 0}</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                <p className="text-xs font-medium text-white/70 uppercase tracking-wide">Lives Touched</p>
+                <p className="mt-1 text-3xl font-bold">{(current.totalDonations || 0) * 3}</p>
+              </div>
+            </div>
+            
+            <div className="bg-black/20 rounded-xl py-3 px-4 backdrop-blur-sm">
+              <p className="text-sm">Current Status: <span className="font-bold text-[#FFD700] ml-1">{current.badge}</span></p>
+            </div>
+            
+            <button 
+              onClick={() => showToast("Impact card copied! Ready to share on social media.", "success")}
+              className="mt-6 w-full rounded-xl bg-white py-3.5 text-sm font-bold text-[#FF4B4B] shadow-xl hover:bg-gray-50 transition-colors"
+            >
+              Share My Impact
+            </button>
           </div>
         </div>
       )}
