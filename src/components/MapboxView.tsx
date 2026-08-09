@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Donor } from "../types";
+import type { Donor } from "../types";
 import { BloodGroupChip } from "./Chips";
 import StatusPill from "./StatusPill";
 

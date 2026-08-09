@@ -5,6 +5,7 @@ import {
   Users,
   Boxes,
   Megaphone,
+  Search,
 } from "lucide-react";
 import DashboardShell, { StatCard } from "../../components/DashboardShell";
 import { BloodGroupChip, Avatar } from "../../components/Chips";

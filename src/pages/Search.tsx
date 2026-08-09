@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { SlidersHorizontal, MapPin, Phone, ShieldCheck, Loader2 } from "lucide-react";
+import { SlidersHorizontal, MapPin, Phone, ShieldCheck, Loader2, Filter } from "lucide-react";
 import { donors as ALL_DONORS, CITIES } from "../data/mock";
 import { BLOOD_GROUPS } from "../data/mock";
 import { BloodGroupChip, Avatar, BadgePill } from "../components/Chips";
@@ -10,7 +10,9 @@ import { daysUntilEligible, formatDate } from "../lib/utils";
 import { gql, DONORS_QUERY } from "../lib/graphql";
 import type { Donor } from "../types";
 import { useToast } from "../context/ToastContext";
+import { useApp } from "../context/AppContext";
 import MapboxView from "../components/MapboxView";
+import { Link } from "react-router-dom";
 
 type SortKey = "distance" | "recent" | "donations";
 
@@ -28,7 +30,9 @@ export default function Search() {
   const [liveDonors, setLiveDonors] = useState<Donor[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [requested, setRequested] = useState<Record<string, boolean>>({});
+  const [showSignInModal, setShowSignInModal] = useState(false);
   const { showToast } = useToast();
+  const { user } = useApp();
 
   useEffect(() => {
     setLoading(true);
@@ -256,8 +260,13 @@ export default function Search() {
 
                     <button 
                       onClick={() => {
+                        if (!user) {
+                          setShowSignInModal(true);
+                          return;
+                        }
                         setRequested(prev => ({ ...prev, [d.id]: true }));
                         showToast(`Contact request sent to ${d.name}. They will be notified.`, "success");
+                        window.dispatchEvent(new CustomEvent("contact_requested", { detail: { donorId: d.id, donorName: d.name } }));
                       }}
                       disabled={requested[d.id]}
                       className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold text-white transition-all ${
@@ -283,6 +292,38 @@ export default function Search() {
           )}
         </div>
       </div>
+      
+      {showSignInModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl"
+          >
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+              <ShieldCheck size={32} />
+            </div>
+            <h2 className="font-display text-2xl font-bold text-ink">Sign in required</h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              You need to be signed in as a Hospital or Patient to request contact with donors.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <Link
+                to="/login"
+                className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-md hover:scale-[1.02] transition-transform"
+              >
+                Go to Sign In
+              </Link>
+              <button
+                onClick={() => setShowSignInModal(false)}
+                className="w-full rounded-xl border border-line py-3 text-sm font-semibold text-ink hover:bg-card transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

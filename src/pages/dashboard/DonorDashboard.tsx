@@ -100,13 +100,32 @@ export default function DonorDashboard() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    const handleContact = (e: Event) => {
+      const customEvent = e as CustomEvent<any>;
+      const currentDonor = donor || mockDonor;
+      if (currentDonor && customEvent.detail.donorId === currentDonor.id) {
+        showToast("Urgent: A hospital or patient has requested to contact you!", "success");
+      }
+    };
+    window.addEventListener("contact_requested", handleContact);
+    return () => window.removeEventListener("contact_requested", handleContact);
+  }, [donor, mockDonor, showToast]);
+
   const handleToggleAvailability = async () => {
-    if (!donor) return;
     try {
       const res = await gql<{ toggleAvailability: { available: boolean } }>(TOGGLE_AVAILABILITY_MUTATION);
-      setDonor((prev: any) => ({ ...prev, available: res.toggleAvailability.available }));
+      setDonor((prev: any) => {
+        const d = prev || mockDonor;
+        return { ...d, available: res.toggleAvailability.available };
+      });
     } catch (err) {
       console.error("Failed to toggle availability:", err);
+      // Fallback for demo when backend is not fully connected
+      setDonor((prev: any) => {
+        const d = prev || mockDonor;
+        return { ...d, available: !d.available };
+      });
     }
   };
 
