@@ -23,6 +23,7 @@ import {
   REJECT_REQUEST_MUTATION,
   UPDATE_DONOR_PROFILE_MUTATION
 } from "../../lib/graphql";
+import { useToast } from "../../context/ToastContext";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -43,6 +44,7 @@ const mapBg = (bg: string) => {
 export default function DonorDashboard() {
   const [tab, setTab] = useState("overview");
   const { currentDonor: mockDonor } = useApp();
+  const { showToast } = useToast();
   
   const [donor, setDonor] = useState<any>(null);
   const [nearby, setNearby] = useState<any[]>([]);
@@ -133,9 +135,10 @@ export default function DonorDashboard() {
     try {
       await gql(UPDATE_DONOR_PROFILE_MUTATION, { input: { city: newCity } });
       await fetchData(); // refresh profile
+      showToast("Profile updated successfully.", "success");
     } catch (err) {
       console.error("Failed to update profile:", err);
-      alert("Failed to update profile.");
+      showToast("Failed to update profile.", "error");
     }
   };
 

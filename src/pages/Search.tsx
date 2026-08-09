@@ -9,6 +9,7 @@ import StatusPill from "../components/StatusPill";
 import { daysUntilEligible, formatDate } from "../lib/utils";
 import { gql, DONORS_QUERY } from "../lib/graphql";
 import type { Donor } from "../types";
+import { useToast } from "../context/ToastContext";
 
 type SortKey = "distance" | "recent" | "donations";
 
@@ -24,6 +25,8 @@ export default function Search() {
 
   const [liveDonors, setLiveDonors] = useState<Donor[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [requested, setRequested] = useState<Record<string, boolean>>({});
+  const { showToast } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -228,10 +231,26 @@ export default function Search() {
                     </dl>
 
                     <button 
-                      onClick={() => alert(`Contact request sent to ${d.name}. They will be notified.`)}
-                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-xs font-semibold text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                      onClick={() => {
+                        setRequested(prev => ({ ...prev, [d.id]: true }));
+                        showToast(`Contact request sent to ${d.name}. They will be notified.`, "success");
+                      }}
+                      disabled={requested[d.id]}
+                      className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold text-white transition-all ${
+                        requested[d.id]
+                          ? "bg-status-green cursor-not-allowed"
+                          : "bg-primary hover:scale-[1.02] active:scale-[0.98]"
+                      }`}
                     >
-                      <Phone size={13} /> Request contact
+                      {requested[d.id] ? (
+                        <>
+                          <ShieldCheck size={13} /> Request sent
+                        </>
+                      ) : (
+                        <>
+                          <Phone size={13} /> Request contact
+                        </>
+                      )}
                     </button>
                   </motion.div>
                 );

@@ -11,6 +11,7 @@ import { BloodGroupChip, Avatar } from "../../components/Chips";
 import StatusPill, { toneForRequestStatus, toneForUrgency } from "../../components/StatusPill";
 import { formatDate, distanceKm } from "../../lib/utils";
 import { gql, ME_HOSPITAL_QUERY, BLOOD_REQUESTS_QUERY, DONORS_QUERY, BROADCAST_EMERGENCY_MUTATION, COMPLETE_REQUEST_MUTATION } from "../../lib/graphql";
+import { useToast } from "../../context/ToastContext";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -30,6 +31,7 @@ const mapBg = (bg: string) => {
 
 export default function HospitalDashboard() {
   const [tab, setTab] = useState("overview");
+  const { showToast } = useToast();
   
   const [hospital, setHospital] = useState<any>(null);
   const [hospitalRequests, setHospitalRequests] = useState<any[]>([]);
@@ -83,17 +85,20 @@ export default function HospitalDashboard() {
   }, [fetchData]);
 
   const handleBroadcast = async () => {
-    if (!broadcastMsg) return alert("Please enter a message.");
+    if (!broadcastMsg) {
+      showToast("Please enter a message.", "error");
+      return;
+    }
     try {
       await gql(BROADCAST_EMERGENCY_MUTATION, {
         message: broadcastMsg,
         bloodGroup: broadcastBg
       });
-      alert("Emergency broadcast sent to nearby donors!");
+      showToast("Emergency broadcast sent to nearby donors!", "success");
       setBroadcastMsg("");
     } catch (err) {
       console.error(err);
-      alert("Failed to send broadcast.");
+      showToast("Failed to send broadcast.", "error");
     }
   };
 
@@ -102,9 +107,10 @@ export default function HospitalDashboard() {
     try {
       await gql(COMPLETE_REQUEST_MUTATION, { id });
       await fetchData();
+      showToast("Request marked as fulfilled.", "success");
     } catch (err) {
       console.error(err);
-      alert("Failed to mark request as fulfilled.");
+      showToast("Failed to mark request as fulfilled.", "error");
     }
   };
 

@@ -33,6 +33,7 @@ import {
   BLOCK_USER_MUTATION
 } from "../../lib/graphql";
 import { monthlyStats, bloodGroupDistribution } from "../../data/mock";
+import { useToast } from "../../context/ToastContext";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -63,6 +64,7 @@ const mapBg = (bg: string) => {
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState("overview");
+  const { showToast } = useToast();
   
   const [stats, setStats] = useState<any>(null);
   const [donors, setDonors] = useState<any[]>([]);
@@ -106,8 +108,10 @@ export default function AdminDashboard() {
     try {
       await gql(VERIFY_DONOR_MUTATION, { donorId: id });
       await fetchData();
+      showToast("Donor verified successfully.", "success");
     } catch (err) {
       console.error(err);
+      showToast("Failed to verify donor.", "error");
     }
   };
 
@@ -115,8 +119,10 @@ export default function AdminDashboard() {
     try {
       await gql(VERIFY_HOSPITAL_MUTATION, { hospitalId: id });
       await fetchData();
+      showToast("Hospital verified successfully.", "success");
     } catch (err) {
       console.error(err);
+      showToast("Failed to verify hospital.", "error");
     }
   };
 
@@ -125,19 +131,12 @@ export default function AdminDashboard() {
   const blockUser = async (id: string) => {
     if (!confirm("Are you sure you want to block this user?")) return;
     try {
-      // In the mockup we block donors by donor.userId. Wait, the donors query returns donor.id. 
-      // Actually, blockUser needs userId. Let's see if donor has userId.
-      // Wait, in GraphQL donors query, we just have id. We should probably block the donor's user ID.
-      // For now, assume donor ID is user ID for simplicity, or we can use the `BLOCK_USER_MUTATION` with donor.id if the backend allows it.
-      // Actually, `donors` query returns `id` which is `donor.id`. `blockUser` expects `userId`. 
-      // Let's modify the frontend to just send the id, but the backend blockUser might fail if it's donorId.
-      // If the backend fails, it's fine for the demo, but let's try to do it right if possible.
-      // Let's just send the id, the backend schema says blockUser(userId: ID!).
       await gql(BLOCK_USER_MUTATION, { userId: id });
       await fetchData();
-    } catch (err) {
+      showToast("User blocked successfully.", "success");
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to block user: " + err.message);
+      showToast("Failed to block user: " + err.message, "error");
     }
   };
 

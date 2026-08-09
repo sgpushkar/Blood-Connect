@@ -4,6 +4,7 @@ import DashboardShell, { StatCard } from "../../components/DashboardShell";
 import { BloodGroupChip } from "../../components/Chips";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { gql, ME_BLOOD_BANK_QUERY, RECORD_DONATION_MUTATION } from "../../lib/graphql";
+import { useToast } from "../../context/ToastContext";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -30,6 +31,7 @@ export default function BloodBankDashboard() {
   const [tab, setTab] = useState("overview");
   const [bank, setBank] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
   
   const [donationGroup, setDonationGroup] = useState("A+");
   const [donationUnits, setDonationUnits] = useState(1);
@@ -53,7 +55,10 @@ export default function BloodBankDashboard() {
   }, [fetchData]);
 
   const handleRecordDonation = async () => {
-    if (!donorId) return alert("Please enter a donor ID.");
+    if (!donorId) {
+      showToast("Please enter a donor ID.", "error");
+      return;
+    }
     if (!bank) return;
     
     // Convert back to backend enum
@@ -74,13 +79,13 @@ export default function BloodBankDashboard() {
           units: donationUnits
         }
       });
-      alert("Donation logged successfully!");
+      showToast("Donation logged successfully!", "success");
       setDonorId("");
       setDonationUnits(1);
       await fetchData(); // refresh stock
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to log donation: " + err.message);
+      showToast("Failed to log donation: " + err.message, "error");
     }
   };
 

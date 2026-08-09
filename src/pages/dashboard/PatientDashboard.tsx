@@ -7,6 +7,7 @@ import { formatDate } from "../../lib/utils";
 import type { UrgencyLevel, BloodGroup } from "../../types";
 import { gql, MY_REQUESTS_QUERY, HOSPITALS_QUERY, CREATE_BLOOD_REQUEST_MUTATION, CANCEL_REQUEST_MUTATION } from "../../lib/graphql";
 import { useApp } from "../../context/AppContext";
+import { useToast } from "../../context/ToastContext";
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
@@ -35,6 +36,7 @@ const mapBg = (bg: string) => {
 export default function PatientDashboard() {
   const [tab, setTab] = useState("overview");
   const { user } = useApp();
+  const { showToast } = useToast();
   const PATIENT_NAME = user?.name || "Patient";
 
   const [mine, setMine] = useState<any[]>([]);
@@ -101,7 +103,7 @@ export default function PatientDashboard() {
       setTab("mine");
     } catch (err) {
       console.error(err);
-      alert("Failed to submit request.");
+      showToast("Failed to submit request.", "error");
     }
   }
 
